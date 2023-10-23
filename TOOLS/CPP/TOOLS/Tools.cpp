@@ -612,17 +612,16 @@ std::string ccfg = "VW_CFG.ini";
 float ddelayDuration = 2.0f;
 float hhealthdiff = 10.0f;
 
-bool _MkCFG(std::string& config_path) // EXAMPLE
+bool _MkCFG(std::string& config_path)
 {
 	std::ofstream outfile(config_path);
 	if (outfile.is_open()) {
 
 		outfile << ";delayDuration задержка после розыска (с)" << std::endl;
-		outfile << "2.5f" << std::endl;
-		outfile << std::endl;
+		outfile << "2.0f" << std::endl;
 
 		outfile << ";healthdiff разница здоровья до и после удара" << std::endl;
-		outfile << "10.5f" << std::endl;
+		outfile << "10.0f" << std::endl;
 		outfile << std::endl;
 
 		outfile.close();
@@ -631,13 +630,14 @@ bool _MkCFG(std::string& config_path) // EXAMPLE
 	return false;
 }
 
-void _InitCFG(std::string& config_path) // EXAMPLE
+void _InitCFG(std::string& config_path)
 {
-	//if (!std::ifstream(config_path))
-	//{ // mk ini
-	//	//std::ofstream outfile(config_path); // не нужен
-	//	if (!MkCFG(config_path)) { Mbox("Spiner couldnt create ini file", "ERROR"); return; }
-	//}
+	if (!std::ifstream(config_path))
+	{ // mk ini
+		//std::ofstream outfile(config_path);
+		if (!_MkCFG(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }
+	}
+	//if (!FileExists(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }
 
 	//std::ifstream infile(config_path);
 	//std::locale loc("C");
@@ -663,8 +663,14 @@ void _InitCFG(std::string& config_path) // EXAMPLE
 	std::string _delayDuration = cfg[1];
 	std::string _healthdiff = cfg[3];
 
+	// Устанавливаем временную локаль с точкой в качестве разделителя
+	std::locale prevLoc = std::locale::global(std::locale("C"));
+
 	ddelayDuration = std::stof(_delayDuration);
 	hhealthdiff = std::stof(_healthdiff);
+
+	// Восстанавливаем предыдущую локаль
+	std::locale::global(prevLoc);
 }
 
 //Events::initGameEvent += [] {

@@ -12,11 +12,10 @@ bool MkCFG(std::string& config_path)
 	if (outfile.is_open()) {
 
 		outfile << ";delayDuration задержка после розыска (с)" << std::endl;
-		outfile << "2.5f" << std::endl;
-		outfile << std::endl;
+		outfile << "2.0f" << std::endl;
 
 		outfile << ";healthdiff разница здоровья до и после удара" << std::endl;
-		outfile << "10.5f" << std::endl;
+		outfile << "10.0f" << std::endl;
 		outfile << std::endl;
 
 		outfile.close();
@@ -27,11 +26,12 @@ bool MkCFG(std::string& config_path)
 
 void InitCFG(std::string& config_path)
 {
-	//if (!std::ifstream(config_path))
-	//{ // mk ini
-	//	//std::ofstream outfile(config_path); // не нужен
-	//	if (!MkCFG(config_path)) { Mbox("Spiner couldnt create ini file", "ERROR"); return; }
-	//}
+	if (!std::ifstream(config_path))
+	{ // mk ini
+		//std::ofstream outfile(config_path);
+		if (!MkCFG(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }
+	}
+	//if (!FileExists(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }
 
 	//std::ifstream infile(config_path);
 	//std::locale loc("C");
@@ -57,8 +57,14 @@ void InitCFG(std::string& config_path)
 	std::string _delayDuration = cfg[1];
 	std::string _healthdiff = cfg[3];
 
+	// Устанавливаем временную локаль с точкой в качестве разделителя
+	std::locale prevLoc = std::locale::global(std::locale("C"));
+
 	delayDuration = std::stof(_delayDuration);
 	healthdiff = std::stof(_healthdiff);
+
+	// Восстанавливаем предыдущую локаль
+	std::locale::global(prevLoc);
 }
 
 Events::initGameEvent += [] {
