@@ -632,7 +632,8 @@ bool _MkCFG(std::string& config_path)
 
 void _InitCFG(std::string& config_path)
 {
-	if (!std::ifstream(config_path))
+	//if (!std::ifstream(config_path))
+	if (!FileExists(config_path))
 	{ // mk ini
 		//std::ofstream outfile(config_path);
 		if (!_MkCFG(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }

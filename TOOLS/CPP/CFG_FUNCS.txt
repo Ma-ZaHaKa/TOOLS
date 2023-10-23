@@ -1,4 +1,4 @@
-#include "TOOLS\Tools.h"
+﻿#include "TOOLS\Tools.h"
 
 std::string cfg = "VW_CFG.ini";
 //--cfg
@@ -26,7 +26,8 @@ bool MkCFG(std::string& config_path)
 
 void InitCFG(std::string& config_path)
 {
-	if (!std::ifstream(config_path))
+	//if (!std::ifstream(config_path))
+	if (!FileExists(config_path))
 	{ // mk ini
 		//std::ofstream outfile(config_path);
 		if (!MkCFG(config_path)) { Mbox("InitCFG couldnt create ini file!", "ERROR"); return; }
