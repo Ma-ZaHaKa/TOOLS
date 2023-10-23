@@ -87,3 +87,20 @@ float _min(float a, float b);
 
 HANDLE InitConsole();
 void LeaveConsole(HANDLE hConsole);
+
+bool DKSleep(float deltaTime, float wait_time, float& sleepBuffer);
+
+//std::chrono::high_resolution_clock::time_point previousTime = std::chrono::high_resolution_clock::now();
+//float SleepBuffer = 0.0f;
+//
+//
+//Events::drawHudEvent += []
+//{
+//	//--calc fps
+//	std::chrono::high_resolution_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+//	std::chrono::duration<float> deltaTime = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
+//	previousTime = currentTime;
+//
+//	if (DKSleep(deltaTime.count(), delayDuration, SleepBuffer)) { canSetWantedLevel = true; } // true когда таймер выйдет
+//
+//}
