@@ -110,3 +110,18 @@ void MboxSTD(const std::string& msg, const std::string& title);
 void EXIT_F();
 void EXIT_S();
 void RaiseError(const char* fmt, ...);
+
+
+//#include "TOOLS\Tools.h"
+//std::string ccfg = "VW_CFG.ini";
+//float ddelayDuration = 2.0f;
+//float hhealthdiff = 10.0f;
+
+bool _MkCFG(std::string& config_path);
+void _InitCFG(std::string& config_path);
+
+//Events::initGameEvent += [] {
+//	if (initRwEventFIX) { return; } // adapter to initRwEvent
+//	else { initRwEventFIX = true; }
+//	InitCFG(ccfg);
+//};

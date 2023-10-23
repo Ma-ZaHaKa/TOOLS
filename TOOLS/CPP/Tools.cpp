@@ -605,3 +605,70 @@ void RaiseError(const char* fmt, ...)
 	MessageBoxA(HWND_DESKTOP, buf, "Fatal Error", MB_SYSTEMMODAL | MB_ICONWARNING);
 	ExitProcess(EXIT_FAILURE);
 }
+
+
+//#include "TOOLS\Tools.h"
+std::string ccfg = "VW_CFG.ini";
+float ddelayDuration = 2.0f;
+float hhealthdiff = 10.0f;
+
+bool _MkCFG(std::string& config_path) // EXAMPLE
+{
+	std::ofstream outfile(config_path);
+	if (outfile.is_open()) {
+
+		outfile << ";delayDuration задержка после розыска (с)" << std::endl;
+		outfile << "2.5f" << std::endl;
+		outfile << std::endl;
+
+		outfile << ";healthdiff разница здоровья до и после удара" << std::endl;
+		outfile << "10.5f" << std::endl;
+		outfile << std::endl;
+
+		outfile.close();
+		return true;
+	}
+	return false;
+}
+
+void _InitCFG(std::string& config_path) // EXAMPLE
+{
+	//if (!std::ifstream(config_path))
+	//{ // mk ini
+	//	//std::ofstream outfile(config_path); // не нужен
+	//	if (!MkCFG(config_path)) { Mbox("Spiner couldnt create ini file", "ERROR"); return; }
+	//}
+
+	//std::ifstream infile(config_path);
+	//std::locale loc("C");
+	//infile.imbue(loc); // для парсинга 1.2f
+
+	//if (infile.is_open())
+	//{
+	//	std::string firstLine = ""; // soundline
+
+	//	std::string line;
+	//	int i = 0;
+	//	while (getline(infile, line)) // FUCKING getline(infile >> std::ws, tmp) coudnt parse
+	//	{
+	//		++i;
+	//		int s5 = std::stoi(line);
+	//		int SpinStartSpeed = std::stof(line);
+	//	}
+	//	infile.close();
+	//}
+
+	std::vector<std::string> cfg = FileReadAllLines(config_path);
+
+	std::string _delayDuration = cfg[1];
+	std::string _healthdiff = cfg[3];
+
+	ddelayDuration = std::stof(_delayDuration);
+	hhealthdiff = std::stof(_healthdiff);
+}
+
+//Events::initGameEvent += [] {
+//	if (initRwEventFIX) { return; } // adapter to initRwEvent
+//	else { initRwEventFIX = true; }
+//	InitCFG(ccfg);
+//};
