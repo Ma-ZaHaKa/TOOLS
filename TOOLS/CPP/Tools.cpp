@@ -520,7 +520,7 @@ std::string Repeat(char character, int count) {
 }
 
 
-static void Mbox(const char* msg, const char* title)
+void Mbox(const char* msg, const char* title)
 {
 	MessageBoxA(HWND_DESKTOP, msg, title, MB_SYSTEMMODAL | MB_ICONWARNING);
 }
@@ -581,20 +581,20 @@ bool DKSleep(float deltaTime, float wait_time, float& sleepBuffer)
 //
 //}
 
-//static void MboxSTD(const std::string& msg, const std::string& title = "title")
-static void MboxSTD(const std::string& msg, const std::string& title)
+//void MboxSTD(const std::string& msg, const std::string& title = "title")
+void MboxSTD(const std::string& msg, const std::string& title)
 {
 	MessageBoxA(HWND_DESKTOP, msg.c_str(), title.c_str(), MB_SYSTEMMODAL | MB_ICONWARNING);
 }
-static void EXIT_F()
+void EXIT_F()
 {
 	ExitProcess(EXIT_FAILURE);
 }
-static void EXIT_S()
+void EXIT_S()
 {
 	ExitProcess(EXIT_SUCCESS);
 }
-static void RaiseError(const char* fmt, ...)
+void RaiseError(const char* fmt, ...)
 {
 	char buf[2048];
 	va_list args;

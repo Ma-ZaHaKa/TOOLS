@@ -81,7 +81,7 @@ std::string base64_encode(const std::string& input);
 std::string url_decode(const std::string& input);
 
 
-static void Mbox(const char* msg, const char* title);
+void Mbox(const char* msg, const char* title);
 float _max(float a, float b);
 float _min(float a, float b);
 
@@ -106,7 +106,7 @@ bool DKSleep(float deltaTime, float wait_time, float& sleepBuffer);
 //}
 
 
-static void MboxSTD(const std::string& msg, const std::string& title);
-static void EXIT_F();
-static void EXIT_S();
-static void RaiseError(const char* fmt, ...);
+void MboxSTD(const std::string& msg, const std::string& title);
+void EXIT_F();
+void EXIT_S();
+void RaiseError(const char* fmt, ...);
