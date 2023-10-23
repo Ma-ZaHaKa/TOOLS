@@ -1,0 +1,11 @@
+	string RemoveDouble32(string str, bool is_trim = true)
+	{
+		bool is_find = false; // regex ( {2,}) for all double 32
+		str = is_trim ? str.Trim() : str;
+		for (int i = 0; i < str.Length; i++)
+		{
+			if (is_find && str[i] == ' ') { str = str.Remove(i, 1); i--; continue; }
+			is_find = str[i] == ' ';
+		}
+		return str;
+	}

@@ -1,0 +1,13 @@
+
+        //if (IsCurrentProcessAlreadyRunning()) { MessageBox.Show("Already started!"); this.Close(); return; }
+        public static bool IsCurrentProcessAlreadyRunning()
+        {
+            string currentProcessName = Process.GetCurrentProcess().ProcessName;
+
+            Process[] processes = Process.GetProcessesByName(currentProcessName);
+
+            // Исключаем текущий процесс из массива
+            processes = processes.Where(p => p.Id != Process.GetCurrentProcess().Id).ToArray();
+
+            return processes.Length > 0;
+        }

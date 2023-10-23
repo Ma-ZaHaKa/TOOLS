@@ -1,0 +1,17 @@
+
+        static Random r = new Random();
+        int _RandVUKL(int min, int max)
+        {
+            return r.Next(min, max);
+        }
+
+        int _RandVKL(int min, int max)
+        {
+            return r.Next(min, max + 1);
+        }
+
+
+
+        static Random r = new Random();
+        static int _RandVUKL(int min, int max) => r.Next(min, max);
+        static int _RandVKL(int min, int max) => r.Next(min, max + 1);

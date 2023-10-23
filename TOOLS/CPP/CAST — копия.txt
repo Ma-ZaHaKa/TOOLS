@@ -1,0 +1,6 @@
+//static_cast  reinterpret_cast const_cast<char*>(constString);
+// copy from Tools.h linker error template
+template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
+void* IntPtr2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
+int VoidPtr2IntPtr(void* _addr) { return reinterpret_cast<int>(_addr); }
+char* constchar2char(const char* input) { return const_cast<char*>(input); }
