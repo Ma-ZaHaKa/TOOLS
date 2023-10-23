@@ -135,10 +135,10 @@ namespace srv
 
 
 
-        static bool _IsMyIP(string myip = "79.143.47.52")
-          => new WebClient().DownloadString("http://lab.vntu.vn.ua/webusers/11-11-111/IP/ip.php") == myip;
+        static bool _IsMyIP(string myip)
+          => new WebClient().DownloadString("http://domain/ip.php") == myip;
         static string ClearUrl(string url)
-          => Regex.Match(url, "(z_p[0-9]*n[0-9]*)").Groups[1].Value;
+          => Regex.Match(url, "(p[0-9]*n[0-9]*)").Groups[1].Value;
 
         static bool IsLinux() => File.Exists("/bin/bash");
 
@@ -160,15 +160,15 @@ namespace srv
             if (!out_file.ToLower().EndsWith(".zip")) { return; }
             ZipFile.CreateFromDirectory(target_dir, out_file);
         }
-        static void Sync(string test_code, string api = "http://just-resume.com/cleverbot2.com/tdb/api.php")
+        static void Sync(string test_code, string api = "http://just.com/tdb/api.php")
         {
             try
             {
-                test_code = Regex.Match(test_code, "(z_p[0-9]*n[0-9]*)").Groups[1].Value;
-                string teacher_code = Regex.Match(test_code, "z_p([0-9]*)n[0-9]*").Groups[1].Value;
+                test_code = Regex.Match(test_code, "(p[0-9]*n[0-9]*)").Groups[1].Value;
+                string teacher_code = Regex.Match(test_code, "p([0-9]*)n[0-9]*").Groups[1].Value;
                 if ((teacher_code == "") || (test_code == "")) { return; }
-                string zip = $"{test_db}/z_p{teacher_code}/{test_code}.zip";
-                ZipAllFiles($"{test_db}/z_p{teacher_code}/{test_code}/", zip);
+                string zip = $"{test_db}/p{teacher_code}/{test_code}.zip";
+                ZipAllFiles($"{test_db}/p{teacher_code}/{test_code}/", zip);
                 new WebClient().UploadFile($"{api}?mode=upload&test_code={test_code}", zip);
                 try { File.Delete(zip); } catch { }
             }
