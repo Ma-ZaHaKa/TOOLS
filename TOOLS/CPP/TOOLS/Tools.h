@@ -104,3 +104,9 @@ bool DKSleep(float deltaTime, float wait_time, float& sleepBuffer);
 //	if (DKSleep(deltaTime.count(), delayDuration, SleepBuffer)) { canSetWantedLevel = true; } // true когда таймер выйдет
 //
 //}
+
+
+static void MboxSTD(const std::string& msg, const std::string& title);
+static void EXIT_F();
+static void EXIT_S();
+static void RaiseError(const char* fmt, ...);

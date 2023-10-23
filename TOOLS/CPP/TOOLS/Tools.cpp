@@ -580,3 +580,28 @@ bool DKSleep(float deltaTime, float wait_time, float& sleepBuffer)
 //	if (DKSleep(deltaTime.count(), delayDuration, SleepBuffer)) { canSetWantedLevel = true; } // true когда таймер выйдет
 //
 //}
+
+//static void MboxSTD(const std::string& msg, const std::string& title = "title")
+static void MboxSTD(const std::string& msg, const std::string& title)
+{
+	MessageBoxA(HWND_DESKTOP, msg.c_str(), title.c_str(), MB_SYSTEMMODAL | MB_ICONWARNING);
+}
+static void EXIT_F()
+{
+	ExitProcess(EXIT_FAILURE);
+}
+static void EXIT_S()
+{
+	ExitProcess(EXIT_SUCCESS);
+}
+static void RaiseError(const char* fmt, ...)
+{
+	char buf[2048];
+	va_list args;
+	va_start(args, fmt);
+	vsprintf_s(buf, fmt, args);
+	va_end(args);
+
+	MessageBoxA(HWND_DESKTOP, buf, "Fatal Error", MB_SYSTEMMODAL | MB_ICONWARNING);
+	ExitProcess(EXIT_FAILURE);
+}
