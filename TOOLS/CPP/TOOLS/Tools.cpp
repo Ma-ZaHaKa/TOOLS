@@ -679,3 +679,6 @@ void _InitCFG(std::string& config_path)
 //	else { initRwEventFIX = true; }
 //	InitCFG(ccfg);
 //};
+
+char* constchar2char(const char* constString) { return const_cast<char*>(constString); }
+char* string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
