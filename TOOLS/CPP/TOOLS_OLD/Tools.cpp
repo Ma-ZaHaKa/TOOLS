@@ -185,8 +185,7 @@ std::string FileReadAllText(std::string& filePath)
 
 
 
-//----STRINGS
-std::vector<std::string> Split(std::string s, std::string delimiter)
+std::vector<std::string> split(std::string s, std::string delimiter)
 {
 	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
 	std::string token;
@@ -202,43 +201,11 @@ std::vector<std::string> Split(std::string s, std::string delimiter)
 	return res;
 }
 
-std::string ToUpper(std::string strToConvert)
+std::string StringToUpper(std::string strToConvert)
 {
-	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), std::toupper); //::toupper
+	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), ::toupper);
 	return strToConvert;
 }
-std::string ToLower(std::string strToConvert)
-{
-	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), std::tolower);
-	return strToConvert;
-}
-
-std::string Trim(const std::string& str)
-{
-	// Find the first non-whitespace character from the beginning.
-	size_t start = str.find_first_not_of(" \t\n\r\f\v");
-
-	if (start == std::string::npos) {
-		// If the string consists only of whitespace, return an empty string.
-		return "";
-	}
-
-	// Find the last non-whitespace character from the end.
-	size_t end = str.find_last_not_of(" \t\n\r\f\v");
-
-	// Calculate the length of the trimmed substring.
-	size_t length = end - start + 1;
-
-	// Extract and return the trimmed substring.
-	return str.substr(start, length);
-}
-
-
-
-
-
-
-
 
 // std::mt19937
 int _RandVUKL(int min, int max)

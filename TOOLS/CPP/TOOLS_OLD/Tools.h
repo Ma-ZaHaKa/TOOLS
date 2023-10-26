@@ -51,14 +51,8 @@ std::string FileReadAllText(std::string& filePath);
 
 
 
-//----STRINGS
-std::vector<std::string> Split(std::string s, std::string delimiter);
-std::string ToUpper(std::string strToConvert);
-std::string ToLower(std::string strToConvert);
-std::string Trim(const std::string& str);
-
-
-
+std::vector<std::string> split(std::string s, std::string delimiter);
+std::string StringToUpper(std::string strToConvert);
 
 int _RandVUKL(int min, int max);
 int _RandVKL(int min, int max);
