@@ -22,7 +22,7 @@
 //template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
 //void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
 //int VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
-
+std::string PointerToString(void* pointer);
 
 //DIRECTORY
 bool DirectoryExists(std::string& folderPath);
