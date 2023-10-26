@@ -5,7 +5,7 @@
 // in header
 //template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
 //void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
-std::string PointerToString(void* pointer) { std::stringstream ss;	ss << pointer; return ss.str(); }
+std::string PointerToString(void* pointer) { std::stringstream ss;	ss << pointer; return "0x" + ss.str(); }
 
 
 //DIRECTORY
