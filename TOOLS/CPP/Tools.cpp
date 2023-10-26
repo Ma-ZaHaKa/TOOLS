@@ -185,7 +185,15 @@ std::string FileReadAllText(std::string& filePath)
 
 
 
-//----STRINGS
+
+
+
+
+
+
+
+
+//----STRINGS-----------------------------------------------------------------
 std::vector<std::string> Split(std::string s, std::string delimiter)
 {
 	size_t pos_start = 0, pos_end, delim_len = delimiter.length();
@@ -213,7 +221,7 @@ std::string ToLower(std::string strToConvert)
 	return strToConvert;
 }
 
-std::string Trim(const std::string& str)
+std::string Trim(std::string& str)
 {
 	// Find the first non-whitespace character from the beginning.
 	size_t start = str.find_first_not_of(" \t\n\r\f\v");
@@ -232,7 +240,18 @@ std::string Trim(const std::string& str)
 	// Extract and return the trimmed substring.
 	return str.substr(start, length);
 }
+std::string Replace(std::string& input, std::string& target, std::string& replacement)
+{
+	std::string result = input;
+	size_t startPos = 0;
 
+	while ((startPos = result.find(target, startPos)) != std::string::npos) {
+		result.replace(startPos, target.length(), replacement);
+		startPos += replacement.length();
+	}
+
+	return result;
+}
 
 
 

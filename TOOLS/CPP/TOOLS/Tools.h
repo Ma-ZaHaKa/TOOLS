@@ -51,11 +51,13 @@ std::string FileReadAllText(std::string& filePath);
 
 
 
-//----STRINGS
+//----STRINGS-----------------------------------------------------------
 std::vector<std::string> Split(std::string s, std::string delimiter);
 std::string ToUpper(std::string strToConvert);
 std::string ToLower(std::string strToConvert);
-std::string Trim(const std::string& str);
+std::string Trim(std::string& str);
+std::string Replace(std::string& input, std::string& target, std::string& replacement);
+
 
 
 
