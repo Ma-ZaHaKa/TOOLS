@@ -120,8 +120,7 @@ template<typename T> bool Check(void* address, T value, int offset = 0)
 */
 static void InsertFunc(void* addrFrom, void* addrTo, bool bIsCall)
 {
-	if (!addrFrom || !addrTo)
-		Error("Incorrect arguments.");
+	if (!addrFrom || !addrTo) { Error("Incorrect arguments."); }
 
 	auto pAddr = Write<unsigned char>(addrFrom, bIsCall ? 0xE8 : 0xE9);
 	auto pRelAddr = Relative(addrTo, pAddr);

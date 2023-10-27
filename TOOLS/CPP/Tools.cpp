@@ -5,7 +5,8 @@
 // in header
 //template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
 //void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
-std::string PointerToString(void* pointer) { std::stringstream ss;	ss << pointer; return "0x" + ss.str(); }
+//int VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
+std::string PointerToString(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 
 
 //DIRECTORY
@@ -734,3 +735,32 @@ void _InitCFG(std::string& config_path)
 
 char* constchar2char(const char* constString) { return const_cast<char*>(constString); }
 char* string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
+std::string Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
+
+std::vector<std::string> ListProcessModules()
+{
+	std::vector<std::string> modules;
+	DWORD processId = GetCurrentProcessId();
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
+
+	if (hProcess == NULL) {
+		std::cerr << "Failed to open process" << std::endl;
+		return modules;
+	}
+
+	HMODULE hModules[1024];
+	DWORD cbNeeded;
+
+	if (EnumProcessModules(hProcess, hModules, sizeof(hModules), &cbNeeded)) {
+		for (DWORD i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
+			TCHAR szModuleName[MAX_PATH];
+
+			if (GetModuleFileNameEx(hProcess, hModules[i], szModuleName, sizeof(szModuleName) / sizeof(TCHAR))) {
+				modules.push_back(szModuleName);
+			}
+		}
+	}
+
+	CloseHandle(hProcess);
+	return modules;
+}

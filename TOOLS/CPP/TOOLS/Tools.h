@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <psapi.h>
 #include <algorithm>
 #include <iomanip>
 #include <vector>
@@ -136,3 +137,6 @@ void _InitCFG(std::string& config_path);
 
 char* constchar2char(const char* constString);
 char* string2char(std::string constString);
+std::string Pointer2String(void* pointer);
+
+std::vector<std::string> ListProcessModules();
