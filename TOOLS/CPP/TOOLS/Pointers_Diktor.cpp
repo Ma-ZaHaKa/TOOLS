@@ -22,6 +22,8 @@ char* PD_string2char(std::string constString) { return const_cast<char*>(constSt
 std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 void* PD_IntPtr2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
 int PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
+void* PD_LLIntPtr2VoidPtr(long long int _addr) { return reinterpret_cast<void*>(_addr); }
+long long int PD_VoidPtrToLLInt(void* _addr) { return reinterpret_cast<long long int>(_addr); }
 template <typename T> T PD_ReadPtr(void* ptr) { try { return *static_cast<const T*>(ptr); } catch (const std::exception& e) { return T{}; } }
 template <typename T> void PD_Write(void* ptr, const T& value) { try { *static_cast<T*>(ptr) = value; } catch (const std::exception& e) {} }
 
@@ -34,6 +36,7 @@ std::string ReadMemoryByStringType(void* pointer, std::string type)
 	else if (type == "char") { _out = std::to_string(PD_ReadPtr<char>(pointer)); }
 
 	else if (type == "int") { _out = std::to_string(PD_ReadPtr<int>(pointer)); }
+	else if (type == "llint") { _out = std::to_string(PD_ReadPtr<long long int>(pointer)); }
 
 	else if (type == "double") { _out = std::to_string(PD_ReadPtr<double>(pointer)); }
 	else if (type == "long") { _out = std::to_string(PD_ReadPtr<long>(pointer)); }
@@ -51,6 +54,7 @@ void WriteMemoryByStringType(void* pointer, std::string type, int value)
 	else if (type == "char") { PD_Write<char>(pointer, value); }
 
 	else if (type == "int") { PD_Write<int>(pointer, value); }
+	else if (type == "llint") { PD_Write<long long int>(pointer, value); }
 
 	else if (type == "double") { PD_Write<double>(pointer, value); }
 	else if (type == "long") { PD_Write<long>(pointer, value); }
@@ -226,7 +230,65 @@ bool CheckPointer(void* pointer) { return CheckPointerBounds(pointer); }
 
 
 
-std::string CalcPointerByOffsets(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain)
+//std::string CalcPointerByOffsetsx64(std::string module_name, long long int base_offset, std::vector<long long int> offsets, bool check_chain)
+std::string CalcPointerByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain)
+{
+	void* LibPtr = GetModuleHandleA(module_name.c_str());
+	//std::cout << "\nLibPtr: " << LibPtr << "\n";
+	//std::cout << "LibPtr: 0x" << LibPtr << "\n";
+	if (!LibPtr) { return "~ERROR! Lib not exists!"; }
+
+	void* StartPtr = Transpose(LibPtr, base_offset);
+	//std::cout << "StartPtr: " << StartPtr << "\n";
+
+
+	void* TmpPtr = PD_LLIntPtr2VoidPtr(PD_ReadPtr<long long int>(StartPtr)); // void*
+	//std::cout << "TmpPtr[0]: " << TmpPtr << "\n";
+	//std::cout << "PD_ReadPtr TmpPtr[0]: " << PD_ReadPtr<long long int>(StartPtr) << "\n";
+
+	if (check_chain && (!CheckPointer(TmpPtr))) { return "~ERROR! Value of Start pointer chain is Zero"; }
+
+	for (int i = 0; i < offsets.size(); i++)
+	{
+		TmpPtr = Transpose(TmpPtr, offsets[i]);
+		if ((i + 1 >= offsets.size())) { break; } // the next reread will return the desired value (now TmpPtr indicate to value)
+		TmpPtr = PD_LLIntPtr2VoidPtr(PD_ReadPtr<long long int>(TmpPtr)); // void*
+		if (check_chain && (!CheckPointer(TmpPtr))) { return "~ERROR! Value of TmpPtr chain is Zero"; } // оффсетов много значение 0 раньше, ошибка
+		//std::cout << "TmpPtr: " << PointerToString(TmpPtr) << "\n";
+		//std::cout << "offset: " << offsets[i] << "\n";
+	}
+
+	return PD_Pointer2String(TmpPtr);
+}
+
+//bool CheckChainPointersByOffsetsx64(std::string module_name, long long int base_offset, std::vector<long long int> offsets)
+bool CheckChainPointersByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets)
+{
+	void* LibPtr = GetModuleHandleA(module_name.c_str());
+	//std::cout << "\nLibPtr: " << PointerToString(LibPtr) << "\n";
+	if (!LibPtr || (!CheckPointer(LibPtr))) { return false; }
+
+	void* StartPtr = Transpose(LibPtr, base_offset);
+	//std::cout << "StartPtr: " << PointerToString(StartPtr) << "\n";
+
+	void* TmpPtr = PD_LLIntPtr2VoidPtr(PD_ReadPtr<long long int>(StartPtr)); // void*
+	if (!TmpPtr || (!CheckPointer(TmpPtr))) { return false; }
+	//std::cout << "TmpPtr[0]: " << PointerToString(TmpPtr) << "\n";
+
+	for (int i = 0; i < offsets.size(); i++)
+	{
+		TmpPtr = Transpose(TmpPtr, offsets[i]);
+		if ((i + 1 >= offsets.size())) { break; } // the next reread will return the desired value (now TmpPtr indicate to value)
+		TmpPtr = PD_LLIntPtr2VoidPtr(PD_ReadPtr<long long int>(TmpPtr)); // void*
+		if (!TmpPtr || (!CheckPointer(TmpPtr))) { return false; } // оффсетов много значение 0 раньше, ошибка
+		//std::cout << "TmpPtr: " << PointerToString(TmpPtr) << "\n";
+		//std::cout << "offset: " << offsets[i] << "\n";
+	}
+
+	return true;
+}
+
+std::string CalcPointerByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain)
 {
 	void* LibPtr = GetModuleHandleA(module_name.c_str());
 	//std::cout << "\nLibPtr: " << PointerToString(LibPtr) << "\n";
@@ -253,7 +315,7 @@ std::string CalcPointerByOffsets(std::string module_name, int base_offset, std::
 	return PD_Pointer2String(TmpPtr);
 }
 
-bool CheckChainPointersByOffsets(std::string module_name, int base_offset, std::vector<int> offsets)
+bool CheckChainPointersByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets)
 {
 	void* LibPtr = GetModuleHandleA(module_name.c_str());
 	//std::cout << "\nLibPtr: " << PointerToString(LibPtr) << "\n";

@@ -1,6 +1,10 @@
 #pragma once
 #include "MsgAPI.h"
 #include "opcode_len_calc.h"
+//#include <Windows.h>  // Äëÿ VirtualProtect
+//#include <cstdint>
+
+
 //---------DK--MOD 31/08
 
 /**
@@ -12,6 +16,14 @@
 * @returns          Leak.
 */
 template<typename T> T Leak(void* address, int offset = 0)
+{
+	if (!address)
+		return T();
+
+	uintptr_t ptr_value = *reinterpret_cast<uintptr_t*>((reinterpret_cast<unsigned char*>(address) + offset));
+	return *reinterpret_cast<T*>(static_cast<unsigned char*>(address) + offset);
+}
+template<typename T> T Leakx86(void* address, int offset = 0)
 {
 	if (!address)
 		return T();
@@ -28,7 +40,12 @@ template<typename T> T Leak(void* address, int offset = 0)
 *
 * @returns        Relative address.
 */
-inline static void *Relative(void* to, void* address)
+inline static void* Relative(void* to, void* address)
+{
+	return (void*)((uintptr_t)to - (uintptr_t)address - sizeof(address));
+}
+
+inline static void *Relativex86(void* to, void* address)
 {
 	return (void *)((int)to - (unsigned int)address - sizeof address);
 }
@@ -41,7 +58,14 @@ inline static void *Relative(void* to, void* address)
 *
 * @returns       Offsetted address.
 */
-inline static void *Transpose(void* addr, int offset, bool deref = false)
+inline static void* Transpose(void* addr, intptr_t offset, bool deref = false)
+{
+	auto res = (void*)((intptr_t)addr + offset);
+
+	return deref ? *(void**)res : res;
+}
+
+inline static void *Transposex86(void* addr, int offset, bool deref = false)
 {
 	auto res = (void *)((int)addr + offset);
 
@@ -77,6 +101,24 @@ inline static void *AllocateExecutableMemory(unsigned int uSize)
 * @returns          Address offsetted by size of value type.
 */
 template<typename T> void* Write(void* address, T value, int offset = 0)
+{
+	if (address == nullptr)
+		Error("Incorrect address.");
+
+	uintptr_t new_address = reinterpret_cast<uintptr_t>(address) + offset;
+
+	DWORD oldProtect;
+	if (!VirtualProtect(reinterpret_cast<void*>(new_address), sizeof(T), PAGE_READWRITE, &oldProtect))
+		Error("Error while calling VirtualProtect.");
+
+	memcpy(reinterpret_cast<void*>(new_address), &value, sizeof(T));
+
+	VirtualProtect(reinterpret_cast<void*>(new_address), sizeof(T), oldProtect, &oldProtect);
+
+	return reinterpret_cast<void*>(new_address + sizeof(T));
+}
+
+template<typename T> void* Writex86(void* address, T value, int offset = 0)
 {
 	if (address == nullptr)
 		Error("Incorrect address.");
