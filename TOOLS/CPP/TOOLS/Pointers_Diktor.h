@@ -18,10 +18,19 @@
 std::string ReadMemoryByStringType(void* pointer, std::string type);
 void WriteMemoryByStringType(void* pointer, std::string type, int value);
 
+
+bool IsHexStr(std::string str);
+bool ValidTypes(std::string type);
+
 bool CheckPointer(void* pointer);
+//uintptr_t Parseuintptr_t(std::string str);
+std::string CalcPointerByOffsets(std::string module_name, uintptr_t  base_offset, std::vector<uintptr_t> offsets, bool check_chain);
+bool CheckChainPointersByOffsets(std::string module_name, uintptr_t  base_offset, std::vector<uintptr_t> offsets);
+
+
 //std::string CalcPointerByOffsetsx64(std::string module_name, long long int base_offset, std::vector<long long int> offsets, bool check_chain);
 //bool CheckChainPointersByOffsetsx64(std::string module_name, long long int base_offset, std::vector<long long int> offsets);
-std::string CalcPointerByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain);
-bool CheckChainPointersByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets);
-std::string CalcPointerByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain);
-bool CheckChainPointersByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets);
+//std::string CalcPointerByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain);
+//bool CheckChainPointersByOffsetsx64(std::string module_name, int base_offset, std::vector<int> offsets);
+//std::string CalcPointerByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets, bool check_chain);
+//bool CheckChainPointersByOffsetsx86(std::string module_name, int base_offset, std::vector<int> offsets);
