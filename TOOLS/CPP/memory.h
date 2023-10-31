@@ -1,126 +1,82 @@
 #pragma once
-#include "Windows.h"
-#include "Psapi.h"
-#include <iostream>
-#include <string>
-
+#include "includes.h"
+#include "definitions.h"
 //#include "console.h"
 
 #define INRANGE(x,a,b)    (x >= a && x <= b)
 #define getBits( x )    (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
 #define getByte( x )    (getBits(x[0]) << 4 | getBits(x[1]))
 
-template <typename T> T ReadPTR(void* ptr) { return *static_cast<const T*>(ptr); }
-void* IntPtrToVoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
-int VoidPtrToIntPtr(void* _addr) { return reinterpret_cast<int>(_addr); }
-
 namespace memory
 {
-	// функция получения адресса по паттерну by DIKTOR
-	inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern)
-	{
-		DWORD rangeStart = VoidPtrToIntPtr(ptrStart);
-		const char* pat = pattern.c_str();
-		DWORD firstMatch = 0;
-		//MODULEINFO miModInfo;
-		//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-		DWORD rangeEnd = rangeStart + block_size;
-		for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
-		{
-			if (!*pat)
-				return IntPtrToVoidPtr(firstMatch);
-
-			if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
-			{
-				if (!firstMatch)
-					firstMatch = pCur;
-
-				if (!pat[2])
-					return IntPtrToVoidPtr(firstMatch);
-
-				if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-					pat += 3;
-
-				else
-					pat += 2; //one ?
-			}
-			else
-			{
-				pat = pattern.c_str();
-				firstMatch = 0;
-			}
-		}
-		return nullptr;
-	}
-	inline DWORD pattern(DWORD rangeStart, DWORD SZ, std::string pattern)
-	{
-		const char* pat = pattern.c_str();
-		DWORD firstMatch = 0;
-		//MODULEINFO miModInfo;
-		//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-		DWORD rangeEnd = rangeStart + SZ;
-		for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
-		{
-			if (!*pat)
-				return firstMatch;
-
-			if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
-			{
-				if (!firstMatch)
-					firstMatch = pCur;
-
-				if (!pat[2])
-					return firstMatch;
-
-				if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-					pat += 3;
-
-				else
-					pat += 2; //one ?
-			}
-			else
-			{
-				pat = pattern.c_str();
-				firstMatch = 0;
-			}
-		}
-		return NULL;
-	}
+	// функция получения оффсета
 	inline DWORD pattern(std::string moduleName, std::string pattern)
 	{
-		const char* pat = pattern.c_str();
-		DWORD firstMatch = 0;
-		DWORD rangeStart = (DWORD)GetModuleHandleA(moduleName.c_str());
+		const char* pattern_4_cut = pattern.c_str();
+		uintptr_t firstMatch = 0;
+		uintptr_t rangeStart = reinterpret_cast<uintptr_t>(GetModuleHandleA(moduleName.c_str()));
 		MODULEINFO miModInfo;
 		GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-		DWORD rangeEnd = rangeStart + miModInfo.SizeOfImage;
-		for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+		uintptr_t rangeEnd = rangeStart + miModInfo.SizeOfImage;
+		uintptr_t start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+
+		for (uintptr_t MemPtr = rangeStart; MemPtr < rangeEnd; MemPtr++)
 		{
-			if (!*pat)
-				return firstMatch;
-
-			if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+			if (!*pattern_4_cut) { return (firstMatch); }
+			if (*(PBYTE)pattern_4_cut == '\?' || *(BYTE*)MemPtr == getByte(pattern_4_cut))
 			{
-				if (!firstMatch)
-					firstMatch = pCur;
-
-				if (!pat[2])
-					return firstMatch;
-
-				if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-					pat += 3;
-
-				else
-					pat += 2; //one ?
+				if (!firstMatch) { firstMatch = MemPtr; start_cut_pattern_ptr = MemPtr; }
+				if (!pattern_4_cut[2]) { return static_cast<DWORD>(firstMatch); } // паттерн закончился
+				//PWORD первых 2 символа из паттерна, PBYTE первый символ
+				if (*(PWORD)pattern_4_cut == '\?\?' || *(PBYTE)pattern_4_cut != '\?') { pattern_4_cut += 3; }
+				else { pattern_4_cut += 2; } //one ?
 			}
 			else
 			{
-				pat = pattern.c_str();
+				pattern_4_cut = pattern.c_str();
+				if (firstMatch) { MemPtr = start_cut_pattern_ptr; } // start+1 делает for в MemPtr++ для того чтобы не было бесконечного срыва
 				firstMatch = 0;
 			}
 		}
 		return NULL;
 	}
+
+	//---BUG!!!
+	//inline dword pattern(std::string moduleName, std::string pattern)
+	//{
+	//	const char* pat = pattern.c_str();
+	//	DWORD firstMatch = 0;
+	//	DWORD rangeStart = (DWORD)GetModuleHandleA(moduleName.c_str());
+	//	MODULEINFO miModInfo;
+	//	GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
+	//	DWORD rangeEnd = rangeStart + miModInfo.SizeOfImage;
+	//	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+	//	{
+	//		if (!*pat)
+	//			return firstMatch;
+
+	//		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+	//		{
+	//			if (!firstMatch)
+	//				firstMatch = pCur;
+
+	//			if (!pat[2])
+	//				return firstMatch;
+
+	//			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
+	//				pat += 3;
+
+	//			else
+	//				pat += 2; //one ?
+	//		}
+	//		else
+	//		{
+	//			pat = pattern.c_str();
+	//			firstMatch = 0;
+	//		}
+	//	}
+	//	return NULL;
+	//}
 
 	// функция получения интерфейса
 	template< typename T >

@@ -12,9 +12,9 @@ struct Process
 	int WorkingSetSizeMB;
 };
 
-#define INRANGE(x,a,b)    (x >= a && x <= b)
-#define getBits( x )    (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
-#define getByte( x )    (getBits(x[0]) << 4 | getBits(x[1]))
+//#define INRANGE(x,a,b)    (x >= a && x <= b)
+//#define getBits( x )    (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
+//#define getByte( x )    (getBits(x[0]) << 4 | getBits(x[1]))
 
 
 char* PD_constchar2char(const char* constString) { return const_cast<char*>(constString); }
@@ -31,12 +31,42 @@ std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << point
 
 uintptr_t PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
 void* PD_IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+std::string PD_StringToLower(std::string strToConvert)
+{
+	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), std::tolower);
+	return strToConvert;
+}
+std::string PD_StringToUpper(std::string strToConvert)
+{
+	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), std::toupper); //::toupper
+	return strToConvert;
+}
 
 template <typename T> T PD_ReadPtr(void* ptr) { try { return *static_cast<const T*>(ptr); } catch (const std::exception& e) { return T{}; } }
 template <typename T> void PD_Write(void* ptr, const T& value) { try { *static_cast<T*>(ptr) = value; } catch (const std::exception& e) {} }
 
 
-bool IsHexStr(std::string str) { return (((str)).substr(0, 2) == "0x"); }
+
+bool IsHexStart0x(std::string str) { return ((PD_StringToLower(str)).substr(0, 2) == "0x"); }
+bool IsHex(std::string input)
+{
+	if (IsHexStart0x(input)) { return true; }
+	//for (char c : input) { if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) { return true; } }
+	for (char c : input) { if ((c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) { return true; } }
+	return false;
+}
+
+
+std::string HexNormalize(std::string input) // 4 stoi parse like 0007baff75
+{
+	bool hex0xStart = IsHexStart0x(input);
+	if (hex0xStart) { input = input.substr(2); }
+	return input;
+	//return PD_StringToUpper(input);
+	//std::regex hexPattern("[0-9a-fA-F]+");
+	//return std::regex_search(input, hexPattern);
+}
+
 
 bool ValidTypes(std::string type) { return ((type == "char") || (type == "int") || (type == "float") || (type == "double") || (type == "dword") || (type == "llint") || (type == "uintptr_t")); }
 
@@ -324,113 +354,241 @@ bool CheckChainPointersByOffsets(std::string module_name, uintptr_t  base_offset
 //	if (pTicketNonConnect == nullptr) {} // не найдено
 //}
 
-inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern)
+inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern) // release in header
 {
-	DWORD rangeStart = PD_VoidPtrToInt(ptrStart);
-	const char* pat = pattern.c_str();
-	DWORD firstMatch = 0;
-	//MODULEINFO miModInfo;
-	//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-	DWORD rangeEnd = rangeStart + block_size;
-	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+	uintptr_t rangeStart = PD_VoidPtrToInt(ptrStart);
+	const char* pattern_4_cut = pattern.c_str();
+	uintptr_t firstMatch = 0;
+	uintptr_t rangeEnd = rangeStart + block_size;
+	uintptr_t start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+
+	for (uintptr_t MemPtr = rangeStart; MemPtr < rangeEnd; MemPtr++)
 	{
-		if (!*pat)
-			return PD_IntPtr2VoidPtr(firstMatch);
-
-		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+		if (!*pattern_4_cut) { return PD_IntPtr2VoidPtr(firstMatch); }
+		if (*(PBYTE)pattern_4_cut == '\?' || *(BYTE*)MemPtr == getByte(pattern_4_cut))
 		{
-			if (!firstMatch)
-				firstMatch = pCur;
-
-			if (!pat[2])
-				return PD_IntPtr2VoidPtr(firstMatch);
-
-			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-				pat += 3;
-
-			else
-				pat += 2; //one ?
+			if (!firstMatch) { firstMatch = MemPtr; start_cut_pattern_ptr = MemPtr; }
+			if (!pattern_4_cut[2]) { return PD_IntPtr2VoidPtr(firstMatch); } // паттерн закончился
+			//PWORD первых 2 символа из паттерна, PBYTE первый символ
+			if (*(PWORD)pattern_4_cut == '\?\?' || *(PBYTE)pattern_4_cut != '\?') { pattern_4_cut += 3; }
+			else { pattern_4_cut += 2; } //one ?
 		}
 		else
 		{
-			pat = pattern.c_str();
+			pattern_4_cut = pattern.c_str();
+			if (firstMatch) { MemPtr = start_cut_pattern_ptr; } // start+1 делает for в MemPtr++ для того чтобы не было бесконечного срыва
 			firstMatch = 0;
 		}
 	}
 	return nullptr;
 }
-inline DWORD pattern(DWORD rangeStart, DWORD SZ, std::string pattern)
+
+inline void* VoidPattern(std::string moduleName, std::string pattern) // release in header
 {
-	const char* pat = pattern.c_str();
-	DWORD firstMatch = 0;
-	//MODULEINFO miModInfo;
-	//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-	DWORD rangeEnd = rangeStart + SZ;
-	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
-	{
-		if (!*pat)
-			return firstMatch;
-
-		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
-		{
-			if (!firstMatch)
-				firstMatch = pCur;
-
-			if (!pat[2])
-				return firstMatch;
-
-			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-				pat += 3;
-
-			else
-				pat += 2; //one ?
-		}
-		else
-		{
-			pat = pattern.c_str();
-			firstMatch = 0;
-		}
-	}
-	return NULL;
-}
-inline DWORD pattern(std::string moduleName, std::string pattern)
-{
-	const char* pat = pattern.c_str();
-	DWORD firstMatch = 0;
-	DWORD rangeStart = (DWORD)GetModuleHandleA(moduleName.c_str());
+	const char* pattern_4_cut = pattern.c_str();
+	uintptr_t firstMatch = 0;
+	uintptr_t rangeStart = reinterpret_cast<uintptr_t>(GetModuleHandleA(moduleName.c_str()));
 	MODULEINFO miModInfo;
 	GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
-	DWORD rangeEnd = rangeStart + miModInfo.SizeOfImage;
-	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+	uintptr_t rangeEnd = rangeStart + miModInfo.SizeOfImage;
+	uintptr_t start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+
+	for (uintptr_t MemPtr = rangeStart; MemPtr < rangeEnd; MemPtr++)
 	{
-		if (!*pat)
-			return firstMatch;
-
-		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+		if (!*pattern_4_cut) { return PD_IntPtr2VoidPtr(firstMatch); }
+		if (*(PBYTE)pattern_4_cut == '\?' || *(BYTE*)MemPtr == getByte(pattern_4_cut))
 		{
-			if (!firstMatch)
-				firstMatch = pCur;
+			if (!firstMatch) { firstMatch = MemPtr; start_cut_pattern_ptr = MemPtr; }
+			if (!pattern_4_cut[2]) { return PD_IntPtr2VoidPtr(firstMatch); } // паттерн закончился
+			//PWORD первых 2 символа из паттерна, PBYTE первый символ
+			if (*(PWORD)pattern_4_cut == '\?\?' || *(PBYTE)pattern_4_cut != '\?') { pattern_4_cut += 3; }
+			else { pattern_4_cut += 2; } //one ?
+		}
+		else
+		{
+			pattern_4_cut = pattern.c_str();
+			if (firstMatch) { MemPtr = start_cut_pattern_ptr; } // start+1 делает for в MemPtr++ для того чтобы не было бесконечного срыва
+			firstMatch = 0;
+		}
+	}
+	return nullptr;
+}
 
-			if (!pat[2])
-				return firstMatch;
+inline void* VoidPatternDBGVER(void* ptrStart, int block_size, std::string pattern)
+{
+	uintptr_t rangeStart = PD_VoidPtrToInt(ptrStart);
+	const char* pat = pattern.c_str();
+	uintptr_t firstMatch = 0;
+	//MODULEINFO miModInfo;
+	//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
+	uintptr_t rangeEnd = rangeStart + block_size;
+	uintptr_t start_cut_pattern_ptr = 0;
+	////----DEBUG
+	//std::cout << "ptrStart: 0x" << ptrStart << "\n";
+	//std::cout << "rangeStart: 0x" << rangeStart << "\n";
+	//std::cout << "pattern: " << pattern << "\n";
+	//std::cout << "block_size: " << block_size << "\n";
+	////---------
+	//std::cout << "\nSRCHBT: ";
 
-			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
-				pat += 3;
+	for (uintptr_t pCur = rangeStart; pCur < rangeEnd; pCur++)
+	{
+		if (!*pat) { return PD_IntPtr2VoidPtr(firstMatch); }
 
-			else
-				pat += 2; //one ?
+		//char c = (*(BYTE*)pCur);
+		////int hexValue = static_cast<unsigned int>(static_cast<unsigned char>(c));
+		//int hexValue = static_cast<int>((c));
+		////std::cout << std::setw(2) << std::setfill('0') << std::hex << hexValue << " ";
+		//std::cout << hexValue << " ";
+		////return nullptr;
+
+		auto a1 = *(PBYTE)pat;
+
+		auto b1 = *(BYTE*)pCur;
+		auto b2 = getByte(pat);
+
+		if (a1 == '\?' || b1 == b2)
+		{
+			if (!firstMatch) { firstMatch = pCur; start_cut_pattern_ptr = pCur; }
+			if (!pat[2]) { return PD_IntPtr2VoidPtr(firstMatch); }
+
+			auto c1 = *(PWORD)pat;
+			char lowByte = (char)(c1 & 0xFF);       // Младший байт (нижние 8 бит)
+			char highByte = (char)((c1 >> 8) & 0xFF); // Старший байт (верхние 8 бит)
+
+			auto c2 = *(PBYTE)pat;
+
+			if (c1 == '\?\?' || c2 != '\?') { pat += 3; }
+			else { pat += 2; } //one ?
 		}
 		else
 		{
 			pat = pattern.c_str();
+			if (firstMatch) { pCur = start_cut_pattern_ptr; } // start+1 делает for pCur++
 			firstMatch = 0;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 
 
+//-----------НИЖЕ--ВСЁ---ДЛЯ---X86------------------------------
+//inline void* VoidPatternx86(void* ptrStart, int block_size, std::string pattern) // x86 only
+//{
+//	DWORD rangeStart = PD_VoidPtrToInt(ptrStart);
+//	const char* pat = pattern.c_str();
+//	DWORD firstMatch = 0;
+//	//MODULEINFO miModInfo;
+//	//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
+//	DWORD rangeEnd = rangeStart + block_size;
+//	DWORD start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+//
+//	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+//	{
+//		if (!*pat)
+//			return PD_IntPtr2VoidPtr(firstMatch);
+//
+//		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+//		{
+//			if (!firstMatch) { firstMatch = pCur; start_cut_pattern_ptr = pCur; }
+//
+//			if (!pat[2])
+//				return PD_IntPtr2VoidPtr(firstMatch);
+//
+//			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
+//				pat += 3;
+//
+//			else
+//				pat += 2; //one ?
+//		}
+//		else
+//		{
+//			pat = pattern.c_str();
+//			if (firstMatch) { pCur = start_cut_pattern_ptr; } // start+1 делает for в pCur++ для того чтобы не было бесконечного срыва
+//			firstMatch = 0;
+//		}
+//	}
+//	return nullptr;
+//}
+//inline DWORD pattern(DWORD rangeStart, DWORD SZ, std::string pattern)
+//{
+//	const char* pat = pattern.c_str();
+//	DWORD firstMatch = 0;
+//	//MODULEINFO miModInfo;
+//	//GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
+//	DWORD rangeEnd = rangeStart + SZ;
+//	DWORD start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+//
+//	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+//	{
+//		if (!*pat)
+//			return firstMatch;
+//
+//		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+//		{
+//			if (!firstMatch) { firstMatch = pCur; start_cut_pattern_ptr = pCur; }
+//
+//
+//			if (!pat[2])
+//				return firstMatch;
+//
+//			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
+//				pat += 3;
+//
+//			else
+//				pat += 2; //one ?
+//		}
+//		else
+//		{
+//			pat = pattern.c_str();
+//			if (firstMatch) { pCur = start_cut_pattern_ptr; } // start+1 делает for в pCur++ для того чтобы не было бесконечного срыва
+//			firstMatch = 0;
+//		}
+//	}
+//	return NULL;
+//}
+//
+//
+//inline DWORD pattern(std::string moduleName, std::string pattern)
+//{
+//	const char* pat = pattern.c_str();
+//	DWORD firstMatch = 0;
+//	DWORD rangeStart = (DWORD)GetModuleHandleA(moduleName.c_str());
+//	MODULEINFO miModInfo;
+//	GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
+//	DWORD rangeEnd = rangeStart + miModInfo.SizeOfImage;
+//	DWORD start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+//
+//	for (DWORD pCur = rangeStart; pCur < rangeEnd; pCur++)
+//	{
+//		if (!*pat)
+//			return firstMatch;
+//
+//		if (*(PBYTE)pat == '\?' || *(BYTE*)pCur == getByte(pat))
+//		{
+//			if (!firstMatch) { firstMatch = pCur; start_cut_pattern_ptr = pCur; }
+//
+//
+//			if (!pat[2])
+//				return firstMatch;
+//
+//			if (*(PWORD)pat == '\?\?' || *(PBYTE)pat != '\?')
+//				pat += 3;
+//
+//			else
+//				pat += 2; //one ?
+//		}
+//		else
+//		{
+//			pat = pattern.c_str();
+//			if (firstMatch) { pCur = start_cut_pattern_ptr; } // start+1 делает for в pCur++ для того чтобы не было бесконечного срыва
+//			firstMatch = 0;
+//		}
+//	}
+//	return NULL;
+//}
+//----------------------------------------------------------------------------------
 
 
 
