@@ -1,15 +1,51 @@
 #pragma once
-#include "includes.h"
-#include "definitions.h"
+#include "Windows.h"
+#include "Psapi.h"
+#include <iostream>
+#include <string>
+
 //#include "console.h"
 
 #define INRANGE(x,a,b)    (x >= a && x <= b)
 #define getBits( x )    (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
 #define getByte( x )    (getBits(x[0]) << 4 | getBits(x[1]))
 
+template <typename T> T ReadPTR(void* ptr) { return *static_cast<const T*>(ptr); }
+void* IntPtrToVoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
+int VoidPtrToIntPtr(void* _addr) { return reinterpret_cast<int>(_addr); }
+
 namespace memory
 {
-	// функция получения оффсета
+	// функция получения адресса по паттерну by DIKTOR
+	inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern) // release in header
+	{
+		uintptr_t rangeStart = VoidPtrToIntPtr(ptrStart);
+		const char* pattern_4_cut = pattern.c_str();
+		uintptr_t firstMatch = 0;
+		uintptr_t rangeEnd = rangeStart + block_size;
+		uintptr_t start_cut_pattern_ptr = 0; // если сорвёться паттерн вернуться от начала поиска +1(делает for)
+
+		for (uintptr_t MemPtr = rangeStart; MemPtr < rangeEnd; MemPtr++)
+		{
+			if (!*pattern_4_cut) { return IntPtrToVoidPtr(firstMatch); }
+			if (*(PBYTE)pattern_4_cut == '\?' || *(BYTE*)MemPtr == getByte(pattern_4_cut))
+			{
+				if (!firstMatch) { firstMatch = MemPtr; start_cut_pattern_ptr = MemPtr; }
+				if (!pattern_4_cut[2]) { return IntPtrToVoidPtr(firstMatch); } // паттерн закончился
+				//PWORD первых 2 символа из паттерна, PBYTE первый символ
+				if (*(PWORD)pattern_4_cut == '\?\?' || *(PBYTE)pattern_4_cut != '\?') { pattern_4_cut += 3; }
+				else { pattern_4_cut += 2; } //one ?
+			}
+			else
+			{
+				pattern_4_cut = pattern.c_str();
+				if (firstMatch) { MemPtr = start_cut_pattern_ptr; } // start+1 делает for в MemPtr++ для того чтобы не было бесконечного срыва
+				firstMatch = 0;
+			}
+		}
+		return nullptr;
+	}
+
 	inline DWORD pattern(std::string moduleName, std::string pattern)
 	{
 		const char* pattern_4_cut = pattern.c_str();
@@ -77,6 +113,7 @@ namespace memory
 	//	}
 	//	return NULL;
 	//}
+
 
 	// функция получения интерфейса
 	template< typename T >
