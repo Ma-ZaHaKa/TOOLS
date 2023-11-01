@@ -13,19 +13,19 @@
 
 template <typename T> T ReadPTR(void* ptr) { return *static_cast<const T*>(ptr); }
 
-uintptr_t PD_VoidPtr2IntPtr(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
-void* PD_IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+uintptr_t M_VoidPtr2IntPtr(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
+void* M_IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
 
-char* PD_constchar2char(const char* constString) { return const_cast<char*>(constString); }
-char* PD_string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
-std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
+char* M_constchar2char(const char* constString) { return const_cast<char*>(constString); }
+char* M_string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
+std::string M_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 
 namespace memory
 {
 	// функция получения адресса по паттерну by DIKTOR
 	inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern) // release in header
 	{
-		uintptr_t rangeStart = PD_VoidPtr2IntPtr(ptrStart);
+		uintptr_t rangeStart = M_VoidPtr2IntPtr(ptrStart);
 		const char* pattern_4_cut = pattern.c_str();
 		uintptr_t firstMatch = 0;
 		uintptr_t rangeEnd = rangeStart + block_size;
@@ -33,11 +33,11 @@ namespace memory
 
 		for (uintptr_t MemPtr = rangeStart; MemPtr < rangeEnd; MemPtr++)
 		{
-			if (!*pattern_4_cut) { return PD_IntPtr2VoidPtr(firstMatch); }
+			if (!*pattern_4_cut) { return M_IntPtr2VoidPtr(firstMatch); }
 			if (*(PBYTE)pattern_4_cut == '\?' || *(BYTE*)MemPtr == getByte(pattern_4_cut))
 			{
 				if (!firstMatch) { firstMatch = MemPtr; start_cut_pattern_ptr = MemPtr; }
-				if (!pattern_4_cut[2]) { return PD_IntPtr2VoidPtr(firstMatch); } // паттерн закончился
+				if (!pattern_4_cut[2]) { return M_IntPtr2VoidPtr(firstMatch); } // паттерн закончился
 				//PWORD первых 2 символа из паттерна, PBYTE первый символ
 				if (*(PWORD)pattern_4_cut == '\?\?' || *(PBYTE)pattern_4_cut != '\?') { pattern_4_cut += 3; }
 				else { pattern_4_cut += 2; } //one ?
