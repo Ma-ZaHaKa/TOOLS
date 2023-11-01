@@ -4,10 +4,21 @@
 
 // in header
 //template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
-//void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
+//void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); } // x86
 //int VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
-std::string PointerToString(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 
+
+//void* PD_IntPtr2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
+//int PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
+
+//intptr_t PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<intptr_t>(_addr); }
+//void* PD_IntPtr2VoidPtr(intptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+
+uintptr_t T_VoidPtr2IntPtr(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
+void* T_IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+char* T_constchar2char(const char* constString) { return const_cast<char*>(constString); }
+char* T_string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
+std::string T_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 
 //DIRECTORY
 bool DirectoryExists(std::string& folderPath)

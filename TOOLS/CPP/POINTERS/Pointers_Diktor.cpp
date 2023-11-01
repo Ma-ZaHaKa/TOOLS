@@ -12,14 +12,11 @@ struct Process
 	int WorkingSetSizeMB;
 };
 
+//---IN HEADER
 //#define INRANGE(x,a,b)    (x >= a && x <= b)
 //#define getBits( x )    (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
 //#define getByte( x )    (getBits(x[0]) << 4 | getBits(x[1]))
 
-
-char* PD_constchar2char(const char* constString) { return const_cast<char*>(constString); }
-char* PD_string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
-std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
 
 //void* PD_IntPtr2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
 //int PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<int>(_addr); }
@@ -29,8 +26,14 @@ std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << point
 //intptr_t PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<intptr_t>(_addr); }
 //void* PD_IntPtr2VoidPtr(intptr_t _addr) { return reinterpret_cast<void*>(_addr); }
 
-uintptr_t PD_VoidPtrToInt(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
+
+uintptr_t PD_VoidPtr2IntPtr(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
 void* PD_IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+char* PD_constchar2char(const char* constString) { return const_cast<char*>(constString); }
+char* PD_string2char(std::string constString) { return const_cast<char*>(constString.c_str()); }
+std::string PD_Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); }
+
+
 std::string PD_StringToLower(std::string strToConvert)
 {
 	std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), std::tolower);
@@ -156,7 +159,7 @@ int GetCurrProcWorkingSetSize()
 
 int WorkingSetSize2MB(int WorkingSetSize) { return WorkingSetSize / (1024 * 1024); } // BYTES => MEGABYTES
 
-void* CalculateLastAddress(void* baseAddress, int WorkingSetSize) { return PD_IntPtr2VoidPtr((PD_VoidPtrToInt(baseAddress)) + WorkingSetSize); }
+void* CalculateLastAddress(void* baseAddress, int WorkingSetSize) { return PD_IntPtr2VoidPtr((PD_VoidPtr2IntPtr(baseAddress)) + WorkingSetSize); }
 
 void* GetLastHeapAddress()
 {
@@ -206,7 +209,7 @@ bool GetMemoryBounds(void* moduleHandle, void** startAddress, void** endAddress)
 MODULEINFO GetModuleInfo(void* pointer)
 {
 	//DWORD rangeStart = (DWORD)GetModuleHandleA(moduleName.c_str());
-	DWORD rangeStart = PD_VoidPtrToInt(pointer);
+	DWORD rangeStart = PD_VoidPtr2IntPtr(pointer);
 	MODULEINFO miModInfo;
 	GetModuleInformation(GetCurrentProcess(), (HMODULE)rangeStart, &miModInfo, sizeof(MODULEINFO));
 	DWORD rangeEnd = rangeStart + miModInfo.SizeOfImage;
@@ -356,7 +359,7 @@ bool CheckChainPointersByOffsets(std::string module_name, uintptr_t  base_offset
 
 inline void* VoidPattern(void* ptrStart, int block_size, std::string pattern) // release in header
 {
-	uintptr_t rangeStart = PD_VoidPtrToInt(ptrStart);
+	uintptr_t rangeStart = PD_VoidPtr2IntPtr(ptrStart);
 	const char* pattern_4_cut = pattern.c_str();
 	uintptr_t firstMatch = 0;
 	uintptr_t rangeEnd = rangeStart + block_size;
@@ -416,7 +419,7 @@ inline void* VoidPattern(std::string moduleName, std::string pattern) // release
 
 inline void* VoidPatternDBGVER(void* ptrStart, int block_size, std::string pattern)
 {
-	uintptr_t rangeStart = PD_VoidPtrToInt(ptrStart);
+	uintptr_t rangeStart = PD_VoidPtr2IntPtr(ptrStart);
 	const char* pat = pattern.c_str();
 	uintptr_t firstMatch = 0;
 	//MODULEINFO miModInfo;

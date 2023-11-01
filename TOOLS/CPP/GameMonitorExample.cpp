@@ -54,6 +54,7 @@ SendWebsocketSTRAsJSONFunction SendWebsocketSTRAsJSON;
 
 uintptr_t VoidPtrToInt(void* _addr) { return reinterpret_cast<uintptr_t>(_addr); }
 void* IntPtr2VoidPtr(uintptr_t _addr) { return reinterpret_cast<void*>(_addr); }
+//std::string Pointer2String(void* pointer) { std::stringstream ss; ss << pointer; return "0x" + ss.str(); } //Tools.h
 
 //------------------------------------PROTO----
 DWORD CALLBACK MessageEntry(LPVOID);
@@ -121,6 +122,9 @@ void MessageHandler(int port, std::string message)
 		std::string mode = json.at("mode");
 		//int type = json.at("type");
 
+
+
+
 		//  { "mode":"get_pointer", "module" : "fmodstudio.dll", "base_offset" : "0x158B50", "offsets" : ["0x5C0", "0x8", "0x60", "0x60", "0x18", "0x208"] }
 		//  { "mode":"get_pointer", "module" : "gta3.exe", "base_offset" : "0x5412F0", "offsets" : ["0x2C0"] }
 		if ((mode == "get_pointer") && json.contains("module") && json.contains("base_offset") && json.contains("offsets"))
@@ -131,12 +135,12 @@ void MessageHandler(int port, std::string message)
 			uintptr_t base_offset = 0;
 			try
 			{  // hex to int STOI
-				if (IsHexStr(_base_offset)) { _base_offset = _base_offset.substr(2); base_offset = std::stoi(_base_offset, 0, 16); } // 16
+				if (IsHex(_base_offset)) { _base_offset = HexNormalize(_base_offset); base_offset = std::stoi(_base_offset, 0, 16); } // 16
 				else { base_offset = std::stoll(_base_offset); } // 10
 				//if (IsHexStr(_base_offset)) { _base_offset = _base_offset.substr(2); } // 16
 				//base_offset = Parseuintptr_t(_base_offset);
 			}
-			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "INVALID OFFSET"); return; }
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID OFFSET"); return; }
 
 			std::vector<uintptr_t> offsets;
 			for (const auto& offset_str : json["offsets"])
@@ -147,13 +151,13 @@ void MessageHandler(int port, std::string message)
 					try
 					{ // hex to int STOI !!! NOT uintptr_t PARSE
 						uintptr_t offset = 0;
-						if (IsHexStr(_offset)) { _offset = _offset.substr(2); offset = std::stoi(_offset, 0, 16); } // 16
+						if (IsHex(_offset)) { _offset = HexNormalize(_offset); offset = std::stoi(_offset, 0, 16); } // 16
 						else { offset = std::stoi(_offset); } // 10
 						//if (IsHexStr(_offset)) { _offset = _offset.substr(2); } // 16
 						//offset = Parseuintptr_t(_offset);
 						offsets.push_back(offset);
 					}
-					catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "INVALID OFFSET"); return; }
+					catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID OFFSET"); return; }
 				}
 			}
 
@@ -168,6 +172,44 @@ void MessageHandler(int port, std::string message)
 		}
 
 
+		//  { "mode":"find_pattern", "pointer" : "0x7F", "pattern" : "55 8B EC 56 8B 75 08 68 ? ? ? ? 56 E8 ? ? ? ? 83 84 C0", "block_size" : "0x2C0" }
+		else if ((mode == "find_pattern") && json.contains("pointer") && json.contains("pattern") && json.contains("block_size"))
+		{
+			std::string _pointer = json.at("pointer");
+			std::string pattern = json.at("pattern");
+			std::string _block_size = json.at("block_size");
+
+
+			uintptr_t _intpointer = 0;
+			void* pointer = NULL;
+
+			try // pointer
+			{ // hex to int STOI
+				if (IsHex(_pointer)) { _pointer = HexNormalize(_pointer); _intpointer = std::stoll(_pointer, 0, 16); } // 16
+				else { _intpointer = std::stoll(_pointer); } // 10
+			}
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID pointer (try_catch)"); return; }
+			pointer = IntPtr2VoidPtr(_intpointer);
+			if (!pointer) { SendWebsocketSTR(port, "~ERROR! INVALID pointer (nullptr)"); return; }
+
+
+			//uintptr_t block_size = 0;
+			int block_size = 0;
+			try
+			{  // hex to int STOI
+				if (IsHex(_block_size)) { _block_size = HexNormalize(_block_size); block_size = std::stoi(_block_size, 0, 16); } // 16
+				else { block_size = std::stoll(_block_size); } // 10
+				//if (IsHexStr(_base_offset)) { _base_offset = _base_offset.substr(2); } // 16
+				//base_offset = Parseuintptr_t(_base_offset);
+			}
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID block_size"); return; }
+
+			//void* res_pointer = NULL;
+			void* res_pointer = InlineSearchPointerByPattern(pointer, block_size, pattern);
+			//if (res_pointer == nullptr) {}
+			if (!res_pointer) { SendWebsocketSTR(port, "~ERROR! POINTER NOT FOUND"); }
+			else { SendWebsocketSTR(port, Pointer2String(res_pointer)); }
+		}
 
 
 
@@ -177,17 +219,17 @@ void MessageHandler(int port, std::string message)
 			std::string _pointer = json.at("pointer");
 			std::string type = json.at("type");
 
-			if (!ValidTypes(type)) { SendWebsocketSTR(port, "INVALID TYPE"); }
+			if (!ValidTypes(type)) { SendWebsocketSTR(port, "~ERROR! INVALID TYPE"); return; }
 
 			uintptr_t _intpointer = 0;
 			void* pointer = NULL;
 
 			try // pointer
 			{ // hex to int STOI
-				if (IsHexStr(_pointer)) { _pointer = _pointer.substr(2); _intpointer = std::stoll(_pointer, 0, 16); } // 16
+				if (IsHex(_pointer)) { _pointer = HexNormalize(_pointer); _intpointer = std::stoll(_pointer, 0, 16); } // 16
 				else { _intpointer = std::stoll(_pointer); } // 10
 			}
-			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "INVALID POINTER"); return; }
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID POINTER"); return; }
 
 
 
@@ -205,7 +247,7 @@ void MessageHandler(int port, std::string message)
 			std::string type = json.at("type");
 			std::string _value = json.at("value");
 
-			if (!ValidTypes(type)) { SendWebsocketSTR(port, "INVALID TYPE"); }
+			if (!ValidTypes(type)) { SendWebsocketSTR(port, "~ERROR! INVALID TYPE"); return; }
 
 			int value = 0;
 			uintptr_t _intpointer = 0;
@@ -213,17 +255,17 @@ void MessageHandler(int port, std::string message)
 
 			try // pointer
 			{ // hex to int STOI
-				if (IsHexStr(_pointer)) { _pointer = _pointer.substr(2); _intpointer = std::stoll(_pointer, 0, 16); } // 16
+				if (IsHex(_pointer)) { _pointer = HexNormalize(_pointer); _intpointer = std::stoll(_pointer, 0, 16); } // 16
 				else { _intpointer = std::stoll(_pointer); } // 10
 			}
-			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "INVALID POINTER"); return; }
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID POINTER"); return; }
 
 			try // value
 			{ // hex to int STOI
-				if (IsHexStr(_value)) { _value = _value.substr(2); value = std::stoi(_value, 0, 16); } // 16
+				if (IsHex(_value)) { _value = HexNormalize(_value); value = std::stoi(_value, 0, 16); } // 16
 				else { value = std::stoi(_value); } // 10
 			}
-			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "INVALID VALUE"); return; }
+			catch (const std::invalid_argument& e) { SendWebsocketSTR(port, "~ERROR! INVALID VALUE"); return; }
 
 
 			pointer = IntPtr2VoidPtr(_intpointer);
@@ -256,8 +298,10 @@ void MessageHandler(int port, std::string message)
 		}
 
 		// { "mode":"hello" }
-		else if ((mode == "hello")) { SendWebsocketSTR(port, "hello"); }
+		else if ((mode == "hello")) { SendWebsocketSTR(port, "gma_hello"); }
+
+		else { SendWebsocketSTR(port, "~ERROR! MODE NOT FOUND OR WRONG ARGS!"); }
 	}
-	else { SendWebsocketSTR(port, "INVALID JSON"); }
+	else { SendWebsocketSTR(port, "~ERROR! INVALID JSON"); }
 }
 

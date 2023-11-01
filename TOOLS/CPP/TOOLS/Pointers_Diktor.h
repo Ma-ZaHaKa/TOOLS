@@ -22,8 +22,12 @@
 //template <typename T> T ReadPtr(void* ptr) { return *static_cast<const T*>(ptr); }
 //void* IntADDR2VoidPtr(int _addr) { return reinterpret_cast<void*>(_addr); }
 
-uintptr_t PD_VoidPtrToInt(void* _addr);
+
+uintptr_t PD_VoidPtr2IntPtr(void* _addr);
 void* PD_IntPtr2VoidPtr(uintptr_t _addr);
+char* PD_constchar2char(const char* constString);
+char* PD_string2char(std::string constString);
+std::string PD_Pointer2String(void* pointer);
 
 
 std::string ReadMemoryByStringType(void* pointer, std::string type);
@@ -52,7 +56,7 @@ bool CheckChainPointersByOffsets(std::string module_name, uintptr_t  base_offset
 
 inline void* InlineSearchPointerByPattern(void* ptrStart, int block_size, std::string pattern)
 {
-	uintptr_t rangeStart = PD_VoidPtrToInt(ptrStart);
+	uintptr_t rangeStart = PD_VoidPtr2IntPtr(ptrStart);
 	const char* pattern_4_cut = pattern.c_str();
 	uintptr_t firstMatch = 0;
 	uintptr_t rangeEnd = rangeStart + block_size;
