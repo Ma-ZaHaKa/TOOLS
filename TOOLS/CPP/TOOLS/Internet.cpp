@@ -1,12 +1,5 @@
-#include <Windows.h>
-#include <iostream>
-#include <wininet.h>
-
-#pragma comment(lib, "wininet.lib")
-
-#define URL_INVALID 0
-#define URL_HTTP    1
-#define URL_HTTPS   2
+#pragma once
+#include "Internet.h"
 
 static int IsURL(LPCSTR lpszURL)
 {
@@ -219,6 +212,66 @@ std::string HTTPGetRequest(std::string url, INT* lpiReturnCode)
 	CHAR szBuffer[4096 + 1];
 	DWORD dwRead;
 	dwRead = 0;
+	while (InternetReadFile(hHttpRequest, szBuffer, sizeof(szBuffer) - 1, &dwRead) && dwRead)
+	{
+		szBuffer[dwRead] = 0;
+		result += szBuffer; // Добавляем данные к строке result
+		dwRead = 0;
+	}
+
+	if (lpiReturnCode != nullptr)
+	{
+		CHAR responseText[256];
+		DWORD responseTextSize = sizeof(responseText);
+
+		if (HttpQueryInfoA(hHttpRequest, HTTP_QUERY_STATUS_CODE, &responseText, &responseTextSize, nullptr))
+		{
+			*lpiReturnCode = atoi(responseText);
+		}
+	}
+
+Finally:
+	InternetCloseHandle(hHttpRequest);
+	InternetCloseHandle(hHttpSession);
+	InternetCloseHandle(hIntSession);
+
+	return result;
+}
+
+
+
+
+std::string HTTPPostRequest(std::string url, std::string postData, INT* lpiReturnCode)
+{
+	std::string result; // Используем std::string для хранения ответа
+
+	if (lpiReturnCode != nullptr) *lpiReturnCode = 0;
+
+	CHAR lpszServerName[1024], lpszObjectName[1024];
+	bool bIsHTTPS = false;
+
+	if (!ParseURL(url.c_str(), lpszServerName, lpszObjectName, &bIsHTTPS)) return result;
+
+	WORD wPort = bIsHTTPS ? INTERNET_DEFAULT_HTTPS_PORT : INTERNET_DEFAULT_HTTP_PORT;
+	DWORD iFlags = bIsHTTPS ? (INTERNET_FLAG_SECURE | INTERNET_FLAG_RELOAD) : INTERNET_FLAG_RELOAD;
+
+	auto hIntSession = InternetOpenA("WinInet", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+	auto hHttpSession = InternetConnectA(hIntSession, lpszServerName, wPort, 0, 0, INTERNET_SERVICE_HTTP, 0, NULL);
+	auto hHttpRequest = HttpOpenRequestA(hHttpSession, "POST", lpszObjectName, 0, 0, 0, iFlags, 0);
+
+	auto szHeaders = "Content-Type: application/x-www-form-urlencoded";
+	CHAR szReq[1024];
+	strcpy(szReq, postData.c_str());
+
+	if (!HttpSendRequestA(hHttpRequest, szHeaders, strlen(szHeaders), szReq, strlen(szReq)))
+	{
+		goto Finally;
+	}
+
+	CHAR szBuffer[4096 + 1];
+	DWORD dwRead;
+	dwRead = 0;
+
 	while (InternetReadFile(hHttpRequest, szBuffer, sizeof(szBuffer) - 1, &dwRead) && dwRead)
 	{
 		szBuffer[dwRead] = 0;

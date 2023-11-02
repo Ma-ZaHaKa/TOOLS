@@ -25,7 +25,7 @@ static void Mbox(const char* msg, const char* title)
 
 	MessageBoxA(HWND_DESKTOP, msg, title, MB_SYSTEMMODAL | MB_ICONWARNING);
 }
-static void Mbox(std::string msg, std::string title)
+static void Mbox(const std::string& msg, const std::string & title = "title")
 {
 	MessageBoxA(HWND_DESKTOP, msg.c_str(), title.c_str(), MB_SYSTEMMODAL | MB_ICONWARNING);
 }

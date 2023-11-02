@@ -208,7 +208,7 @@ void MessageHandler(int port, std::string message)
 			void* res_pointer = InlineSearchPointerByPattern(pointer, block_size, pattern);
 			//if (res_pointer == nullptr) {}
 			if (!res_pointer) { SendWebsocketSTR(port, "~ERROR! POINTER NOT FOUND"); }
-			else { SendWebsocketSTR(port, Pointer2String(res_pointer)); }
+			else { SendWebsocketSTR(port, T_Pointer2String(res_pointer)); }
 		}
 
 
@@ -281,7 +281,7 @@ void MessageHandler(int port, std::string message)
 			std::string module = json.at("module");
 
 			HMODULE hmodule = GetModuleHandleA(module.c_str());
-			std::string _out = hmodule ? Pointer2String((void*)hmodule) : "~ERROR! Module not found!";
+			std::string _out = hmodule ? T_Pointer2String((void*)hmodule) : "~ERROR! Module not found!";
 
 			SendWebsocketSTR(port, _out);
 		}

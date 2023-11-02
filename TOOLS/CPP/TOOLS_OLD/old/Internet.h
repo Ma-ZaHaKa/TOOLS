@@ -1,4 +1,4 @@
-#pragma once // BY DIKTOR DD0S2!!!
+#pragma once
 #define HTTP_UTILS_H
 
 #include <Windows.h>
@@ -17,4 +17,3 @@ int IsURL(LPCSTR lpszURL);
 //std::string HTTPGetRequest(LPCSTR lpszURL, INT* lpiReturnCode = nullptr);
 BOOL ParseURL(const char* pszURL, char* pszHost, char* pszObject, bool* bIsHTTPS);
 std::string HTTPGetRequest(std::string url, INT* lpiReturnCode = nullptr);
-std::string HTTPPostRequest(std::string url, std::string postData, INT* lpiReturnCode = nullptr);
