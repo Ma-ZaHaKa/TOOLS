@@ -1007,3 +1007,10 @@ std::vector<std::string> ListProcessModules()
 	CloseHandle(hProcess);
 	return modules;
 }
+
+std::string CWGetString()
+{
+	std::string input;
+	std::getline(std::cin, input);
+	return input;
+}

@@ -145,3 +145,4 @@ void _InitCFG(std::string& config_path);
 //};
 
 std::vector<std::string> ListProcessModules();
+std::string CWGetString();
