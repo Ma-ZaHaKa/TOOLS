@@ -115,7 +115,7 @@ void MessageHandler(int port, std::string message)
 
 	//try { json = nlohmann::json::parse(ToLower(message)); }
 	try { json = nlohmann::json::parse(message); }
-	catch (const std::exception& e) { return; }
+	catch (const std::exception& e) { SendWebsocketSTR(port, "~ERROR! Error parse JSON");  return; }
 
 	if (json.contains("mode"))
 	{
@@ -161,7 +161,7 @@ void MessageHandler(int port, std::string message)
 				}
 			}
 
-			SendWebsocketSTR(port, CalcPointerByOffsets(module_name, base_offset, offsets, true));
+			SendWebsocketSTR(port, CalcPointerByOffsetsStr(module_name, base_offset, offsets, true));
 
 
 			//--CHECKSUM
@@ -296,6 +296,29 @@ void MessageHandler(int port, std::string message)
 			if (_out == "") { _out = "~ERROR! Modules not found"; }
 			SendWebsocketSTR(port, _out);
 		}
+
+		// { "mode":"load_module", "path":"WEBSOCKET.dll" }
+		else if ((mode == "load_module") && json.contains("path")) // не работает кирилица, Loadlibrary!!
+		{
+			std::string __path = json.at("path"); // 1251
+			//std::wstring _path = cp1251_to_wstring(__path); // W
+			if (!FileExists(__path)) { SendWebsocketSTR(port, "~ERROR! File not exists");  return; }
+
+			HMODULE hmod = NULL;
+			hmod = GetModuleHandleA(__path.c_str());
+			if (hmod) { SendWebsocketSTR(port, "~ERROR! LIBRARY ALREADY EXISTS!"); return; }
+			hmod = LoadLibraryA(__path.c_str());
+			if (!hmod) { SendWebsocketSTR(port, "~ERROR! LIBRARY NOT LOADED"); return; }
+
+			/*while (!hmod)
+			{
+				hmod = GetModuleHandleA("engine.dll");
+				Sleep(50);
+			}*/
+
+			SendWebsocketSTR(port, "LOAD OK!");
+		}
+
 
 		// { "mode":"hello" }
 		else if ((mode == "hello")) { SendWebsocketSTR(port, "gma_hello"); }
